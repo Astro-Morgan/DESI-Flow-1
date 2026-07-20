@@ -1,4 +1,4 @@
-# AEON-Flow
+# DESI-Flow
 
 Reference implementation of a multi-stage machine-learning pipeline for
 spectroscopic redshift estimation on DESI/SDSS spectra. The pipeline distills
