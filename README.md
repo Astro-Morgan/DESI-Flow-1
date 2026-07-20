@@ -1,10 +1,12 @@
 # DESI-Flow
 
 Reference implementation of a multi-stage machine-learning pipeline for
-spectroscopic redshift estimation on DESI/SDSS spectra. The pipeline distills
+spectroscopic redshift estimation on DESI spectra. The pipeline distills
 a large multimodal foundation model (AION-1) into progressively lighter,
 deployable models, ending in full redshift posteriors with out-of-distribution
 detection -- and a photometry-only branch for objects without spectra.
+
+Model weights available at https://huggingface.co/AndyMorgan-NOIRLab/DESI-Flow-1
 
 This repository is published as a code reference, not an installable package.
 Paths in the training scripts and notebook are placeholders (marked
