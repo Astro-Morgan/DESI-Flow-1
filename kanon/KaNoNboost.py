@@ -44,7 +44,6 @@ CONFIG_GALAXY = {
         'missing': np.nan,
         'tree_method': 'hist',
     },
-    # Score: 0.684% Outlier Rate
     'latent': {
         'n_estimators': 704,
         'max_depth': 15,
@@ -73,7 +72,6 @@ CONFIG_QSO = {
         'missing': np.nan,
         'tree_method': 'hist',
     },
-    # Score: 12.07% Outlier Rate
     'latent': {
         'n_estimators': 3400,
         'max_depth': 14,
@@ -91,7 +89,6 @@ CONFIG_QSO = {
 }
 
 # --- GATEKEEPER CLASSIFIER ---
-# 98.19% Accuracy
 CONFIG_CLF = {
     'n_estimators': 390,
     'max_depth': 8,
