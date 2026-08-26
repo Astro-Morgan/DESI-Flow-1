@@ -202,7 +202,7 @@ class KaNoNPipeline:
         return self.latent_mapper.predict(X_final)
 
 
-class KaNoNboost:
+class kanonBOOST:
     """Master photometric pipeline: magnitudes -> class -> embedding -> z.
 
     Holds one gatekeeper classifier plus one GALAXY and one QSO
