@@ -221,9 +221,6 @@ class kanonBOOST:
                                                    n_jobs=-1, algorithm='kd_tree')
 
         self.configs = {
-            4: ('griz', ['g', 'r', 'i', 'z']),
-            5: ('ugriz', ['u', 'g', 'r', 'i', 'z']),
-            6: ('grizW', ['g', 'r', 'i', 'z', 'w1', 'w2']),
             7: ('ugrizW', ['u', 'g', 'r', 'i', 'z', 'w1', 'w2']),
         }
 
