@@ -108,7 +108,7 @@ CONFIG_CLF = {
 #   PIPELINE ARCHITECTURE
 # ==========================================
 
-class KaNoNPipeline:
+class kanonPipeline:
     """Per-class (GALAXY or QSO) photometry -> latent-embedding pipeline.
 
     Two stages:
@@ -228,8 +228,8 @@ class kanonBOOST:
             self.registry[name] = {
                 'bands': bands,
                 'classifier': XGBClassifier(**CONFIG_CLF),
-                'GALAXY': KaNoNPipeline('GALAXY', bands, CONFIG_GALAXY['proxy'], CONFIG_GALAXY['latent']),
-                'QSO': KaNoNPipeline('QSO', bands, CONFIG_QSO['proxy'], CONFIG_QSO['latent']),
+                'GALAXY': kanonPipeline('GALAXY', bands, CONFIG_GALAXY['proxy'], CONFIG_GALAXY['latent']),
+                'QSO': kanonPipeline('QSO', bands, CONFIG_QSO['proxy'], CONFIG_QSO['latent']),
             }
 
     def train_all(self, X_full_7band, z_true, embeddings, labels):
