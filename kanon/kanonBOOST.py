@@ -71,6 +71,7 @@ CONFIG_QSO = {
         'n_jobs': -1,
         'missing': np.nan,
         'tree_method': 'hist',
+        'device': 'cuda',
     },
     'latent': {
         'n_estimators': 3400,
@@ -83,6 +84,7 @@ CONFIG_QSO = {
         'reg_alpha': 2.88,
         'grow_policy': 'lossguide',
         'tree_method': 'hist',
+        'device': 'cuda',
         'n_jobs': -1,
         'missing': np.nan,
     },
@@ -99,6 +101,7 @@ CONFIG_CLF = {
     'gamma': 1.66,
     'objective': 'binary:logistic',
     'tree_method': 'hist',
+    'device': 'cuda',
     'n_jobs': -1,
     'missing': np.nan,
 }
@@ -181,7 +184,7 @@ class kanonPipeline:
 
         # --- Latent mapper: [features, oof proxy z] -> embedding ---
         X_final_train = np.column_stack([X_feats, z_proxy_oof])
-        self.latent_mapper = MultiOutputRegressor(xgb.XGBRegressor(**self.latent_params))
+        self.latent_mapper = xgb.XGBRegressor(**self.latent_params)
         self.latent_mapper.fit(X_final_train, embeddings)
         self.is_fitted = True
 
