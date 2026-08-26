@@ -13,12 +13,12 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
-from KaNoNboost import KaNoNboost
+from kanonBOOST import kanonBOOST
 
 # --- CONFIGURATION ---
 DATA_FILE = 'merged_filtered_sample.hdf5'   # <-- UPDATE: catalog HDF5
 EMB_FILE = 'embeddings.h5'                  # <-- UPDATE: spectral embeddings HDF5
-OUTPUT_MODEL = 'KaNoNboost.pkl'
+OUTPUT_MODEL = 'kanonBOOST.pkl'
 
 # Concordance thresholds for the golden sample: |z_sdss - z_desi| / (1 + z_desi)
 TOL_GAL = 0.0033
