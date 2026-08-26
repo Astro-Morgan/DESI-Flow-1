@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     # 4. --- Train KaNoNboost ---
     print("\nInitializing KaNoNboost Training...")
-    model = KaNoNboost()
+    model = kanonBOOST()
     model.train_all(X_tr, z_tr, emb_tr, lab_tr)
     model.save(OUTPUT_MODEL)
 
