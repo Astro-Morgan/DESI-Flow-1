@@ -284,11 +284,12 @@ if __name__ == "__main__":
     print("Training Ground Truth 15-NN Classifier (Embeddings)...")
     knn_gold = KNeighborsClassifier(n_neighbors=15, weights='distance', n_jobs=-1)
     knn_gold.fit(emb_tr, lab_tr)
-    lab_gold_full = knn_gold.predict(emb)
+    # Define the ground truth strictly for the test set
+    lab_gold_te = knn_gold.predict(emb_te)
 
     print("\nInitializing DirectBOOST Training...")
     model = DirectBOOST()
-    # Notice we don't pass emb_tr to the model training!
+    # Train only on the training split
     model.train_all(X_tr, z_tr, lab_tr)
     model.save(OUTPUT_MODEL)
 
@@ -305,9 +306,8 @@ if __name__ == "__main__":
 
     # PART A: Forced Modes
     for name, indices in config_slices.items():
-        X_full_slice = X[:, indices]
+        # Evaluate strictly on the test set slice
         X_te_slice = X_te[:, indices]
-        lab_gold_te = lab_gold_full[len(X_tr):]
 
         internal_clf = model.registry[name]['classifier']
         X_clf_feats = np.nan_to_num(model._get_colors_for_clf(X_te_slice, model.registry[name]['bands']), nan=30.0)
@@ -318,12 +318,16 @@ if __name__ == "__main__":
         fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
         for i, obj_type in enumerate(['GALAXY', 'QSO']):
-            mask_type = (lab_gold_full == obj_type)
-            z_pred_forced = model.predict(X_full_slice[mask_type], spectype=obj_type)
-            z_target = z[mask_type]
+            # Filter the test set by ground-truth type
+            mask_type = (lab_gold_te == obj_type)
+            if np.sum(mask_type) == 0:
+                continue
+
+            z_pred_forced = model.predict(X_te_slice[mask_type], spectype=obj_type)
+            z_target = z_te[mask_type]
 
             mae, eta, nmad = calculate_metrics(z_target, z_pred_forced)
-            print(f"{name:<8} | {obj_type:<7} | {'FORCED':<12} | {acc_te:.2f}%            | {mae:.4f}   | {nmad:.4f}   | {eta:.2f}")
+            print(f"{name:<8} | {obj_type:<7} | {'FORCED':<12} | {acc_te:.2f}%             | {mae:.4f}   | {nmad:.4f}   | {eta:.2f}")
             plot_performance(z_target, z_pred_forced, obj_type, name, axes[i], is_auto=False)
 
         plt.tight_layout()
@@ -336,15 +340,18 @@ if __name__ == "__main__":
     print("-" * 110)
     name = 'ugrizW'
     indices = config_slices[name]
-    X_full_slice = X[:, indices]
+    X_te_slice = X_te[:, indices]
 
-    z_pred_auto = model.predict(X_full_slice, spectype=None)
+    z_pred_auto = model.predict(X_te_slice, spectype=None)
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     for i, obj_type in enumerate(['GALAXY', 'QSO']):
-        mask_type = (lab_gold_full == obj_type)
+        mask_type = (lab_gold_te == obj_type)
+        if np.sum(mask_type) == 0:
+            continue
+            
         z_p = z_pred_auto[mask_type]
-        z_t = z[mask_type]
+        z_t = z_te[mask_type]
 
         mae, eta, nmad = calculate_metrics(z_t, z_p)
         acc_disp = "N/A (Auto)"
