@@ -28,10 +28,6 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import KFold
 
-# ==========================================
-#   OPTIMIZED HYPERPARAMETERS
-# ==========================================
-
 # --- GALAXY PIPELINE ---
 CONFIG_GALAXY = {
     'proxy': {
@@ -80,7 +76,7 @@ CONFIG_QSO = {
         'min_child_weight': 9,
         'subsample': 0.807,
         'colsample_bytree': 0.796,
-        'gamma': 0.0008,  # near-zero gamma allows jagged manifold cuts
+        'gamma': 0.0008,
         'reg_alpha': 2.88,
         'grow_policy': 'lossguide',
         'tree_method': 'hist',
@@ -140,7 +136,7 @@ class kanonPipeline:
         for i in range(len(self.bands) - 1):
             feats.append(X_mags[:, i] - X_mags[:, i + 1])
         X_out = np.column_stack(feats)
-        X_out[~np.isfinite(X_out)] = np.nan  # XGBoost handles NaN natively
+        X_out[~np.isfinite(X_out)] = np.nan
         return X_out
 
     def train(self, X_mags, z_true, embeddings, iterations=5, n_folds=5):
@@ -169,7 +165,7 @@ class kanonPipeline:
             z_curr_full = m.predict(X_in)
 
         # --- Out-of-fold chain (only its val-fold predictions are kept,
-        #     and only as *inputs* to the latent mapper) ---
+        #     and only as inputs to the latent mapper) ---
         for tr_idx, val_idx in kf.split(X_feats):
             z_curr_fold_tr = np.zeros(len(tr_idx))
             z_curr_fold_val = np.zeros(len(val_idx))
