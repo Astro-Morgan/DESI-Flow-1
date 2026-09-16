@@ -1,10 +1,7 @@
 # DESI-Flow
 
 Reference implementation of a multi-stage machine-learning pipeline for
-spectroscopic redshift estimation on DESI spectra. The pipeline distills
-a large multimodal foundation model (AION-1) into progressively lighter,
-deployable models, ending in full redshift posteriors with out-of-distribution
-detection -- and a photometry-only branch for objects without spectra.
+spectroscopic redshift estimation on DESI spectra.
 
 Model weights available at https://huggingface.co/AndyMorgan-NOIRLab/DESI-Flow-1
 
@@ -36,22 +33,21 @@ ground truth is the normalized cross-correlation (CCF) peak between
 preprocessed spectra, using on-the-fly hard-triplet mining.
 
 **2. Aristotle** (`aristotle/`) -- the student. A spectrum-only CNN +
-Transformer encoder distilled from Plato via MSE on the 32-dim embeddings.
+Transformer + MLP encoder distilled from Plato via MSE on the 32-dim embeddings.
 It loads Plato's trained projection head and freezes it, so student and
 teacher share one embedding space. No AION model is needed at inference.
 
 **3. KaNoN** (`kanon/KaNoN.py`, trained in `kanon/KaNoN_train.ipynb`) --
 conditional normalizing flows (zuko neural spline flows) on the embeddings:
-a manifold flow p(phi) for OOD detection, and a physics flow p(z | phi)
+p(phi) for OOD detection, and p(z | phi) for redshift prediction
 parameterized as a residual around a k-NN anchor prediction with
-redshift-binned residual scaling. Produces full redshift posteriors, not just
-point estimates.
+redshift-binned residual scaling. Produces full redshift posteriors.
 
 **4. KaNoNboost** (`kanon/KaNoNboost.py`) -- the photometric branch. XGBoost
 models map broadband magnitudes into the same 32-dim embedding space (the
 "latent bridge") via a gatekeeper GALAXY/QSO classifier and per-class stacked
 proxy-redshift chains; the final redshift is a k-NN lookup in embedding space.
-Supports griz / ugriz / grizW / ugrizW band configurations.
+Supports ugrizW.
 
 ## Repository layout
 
@@ -84,15 +80,15 @@ Every model consumes the same representation, produced by
 inverse-variance-weighted Gaussian smoothing (11-px kernel, sigma = 11/6) of
 the flux over valid pixels (`mask == 0`), standardized to zero mean / unit
 variance over the valid pixels, with masked regions zeroed. `GPUPreprocessor`
-in the same module is the mathematically equivalent batched PyTorch version,
-used by the Aristotle training loop to whiten raw batches on the GPU.
+in the same module is the equivalent batched PyTorch version.
 
 ## Data expectations
 
 Spectra HDF5 (`merged_filtered_sample.hdf5` in the placeholders): `FLUX`,
 `IVAR`, `MASK` arrays of shape (N, 7781), plus for the KaNoN/KaNoNboost
 stages `desi_z`, `sdss_z`, `spectype` ('GALAXY'/'QSO'), and for KaNoNboost
-`sdss_flux_{u,g,r,i,z,w1,w2}` / `sdss_ext_*` fluxes and extinctions.
+`sdss_flux_{u,g,r,i,z,w1,w2}` / `sdss_ext_*` fluxes and extinctions 
+(w1 and w2 are not SDSS photometric bands even though they were appended to 'sdss_flux_').
 
 Embeddings HDF5 (`embeddings.h5`): per-object embedding arrays keyed by stage
 -- `raw_aion` (AION-1 sequences, Plato's queries), then the outputs written by
@@ -117,8 +113,7 @@ redshifts agree within class-dependent tolerances (GALAXY 0.33%, QSO 1%).
    the FAISS local-scale map, local redshift gradients, and cross-validated
    k-NN anchors, trains both flows with independent early stopping and LR
    annealing, and writes a full-catalog posterior HDF5.
-4. **KaNoNboost**: run `kanon/KaNoNboost_train.py` to train all four band
-   configurations against the spectral embeddings and produce evaluation
+4. **KaNoNboost**: run `kanon/KaNoNboost_train.py` to train against the spectral embeddings and produce evaluation
    plots (`kanonboost_*.png`).
 
 ## Dependencies
