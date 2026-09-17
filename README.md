@@ -15,7 +15,7 @@ Paths in the training scripts and notebook are placeholders (marked
 AION-1 embeddings + spectra                     photometry (ugriz + WISE)
         |                                                |
         v                                                v
-   [1] Plato  (teacher) ---(distill)---> [2] Aristotle   [4] KaNoNboost
+   [1] Plato  (teacher) ---(distill)---> [2] Aristotle   [4] kanonBOOST
         \                                     |            (latent bridge:
          \--> 32-dim embedding space  <-------/             mags -> embedding
                         |                                   -> kNN -> z)
@@ -43,7 +43,7 @@ p(phi) for OOD detection, and p(z | phi) for redshift prediction
 parameterized as a residual around a k-NN anchor prediction with
 redshift-binned residual scaling. Produces full redshift posteriors.
 
-**4. KaNoNboost** (`kanon/KaNoNboost.py`) -- the photometric branch. XGBoost
+**4. kanonBOOST** (`kanon/kanonBOOST.py`) -- the photometric branch. XGBoost
 models map broadband magnitudes into the same 32-dim embedding space (the
 "latent bridge") via a gatekeeper GALAXY/QSO classifier and per-class stacked
 proxy-redshift chains; the final redshift is a k-NN lookup in embedding space.
@@ -64,8 +64,10 @@ aristotle/
 kanon/
     KaNoN.py                         Flow model (anchor, flows, losses, inference)
     KaNoN_train.ipynb                Precompute -> train -> full-catalog inference
-    KaNoNboost.py                    Photometric pipeline
-    KaNoNboost_train.py              Training + evaluation script with plots
+    kanonBOOST.py                    Photometric pipeline
+    kanonBOOST_train.py              Training + evaluation script with plots
+    DirectBOOST.py                   Baseline photometry -> redshift xgboost model
+    DirectBOOST_train.py             Training + evaluation script with plots
 LICENSE                              MIT
 ```
 
@@ -113,7 +115,7 @@ redshifts agree within class-dependent tolerances (GALAXY 0.33%, QSO 1%).
    the FAISS local-scale map, local redshift gradients, and cross-validated
    k-NN anchors, trains both flows with independent early stopping and LR
    annealing, and writes a full-catalog posterior HDF5.
-4. **KaNoNboost**: run `kanon/KaNoNboost_train.py` to train against the spectral embeddings and produce evaluation
+4. **kanonBOOST**: run `kanon/kanonBOOST_train.py` to train against the spectral embeddings and produce evaluation
    plots (`kanonboost_*.png`).
 
 ## Dependencies
