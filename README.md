@@ -47,7 +47,7 @@ redshift-binned residual scaling. Produces full redshift posteriors.
 models map broadband magnitudes into the same 32-dim embedding space (the
 "latent bridge") via a gatekeeper GALAXY/QSO classifier and per-class stacked
 proxy-redshift chains; the final redshift is a k-NN lookup in embedding space.
-Supports ugrizW.
+Supports ugrizW1W2 photometry.
 
 ## Repository layout
 
