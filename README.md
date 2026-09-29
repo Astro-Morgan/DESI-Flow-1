@@ -82,7 +82,9 @@ Every model consumes the same representation, produced by
 inverse-variance-weighted Gaussian smoothing (11-px kernel, sigma = 11/6) of
 the flux over valid pixels (`mask == 0`), standardized to zero mean / unit
 variance over the valid pixels, with masked regions zeroed. `GPUPreprocessor`
-in the same module is the equivalent batched PyTorch version.
+in the same module is the equivalent batched PyTorch version. Plato additionally
+requires the Polymathic-AI AION-1 B Encoder's output token sequence for each spectrum.
+
 
 ## Data expectations
 
