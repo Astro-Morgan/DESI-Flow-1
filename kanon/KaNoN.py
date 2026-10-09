@@ -479,7 +479,7 @@ class KaNoN(nn.Module):
                 return z_mode, z_std, z_grid_raw, probs
             return z_mode, z_std
 
-    def spectral_logprob(self, phi):
+    def spectral_logprob_w_latent_sq_norm(self, phi):
         """Evaluate p(phi) for out-of-distribution detection.
 
         Returns:
@@ -498,6 +498,19 @@ class KaNoN(nn.Module):
             latent_sq_norm = torch.sum(z_latent ** 2, dim=1)
 
             return log_prob, latent_sq_norm
+
+   def spectral_logprob(self, phi):
+      """Evaluate p(phi) for out-of-distribution detection.
+         Primary, fast version of the method
+
+        Returns:
+            log_prob: log p(phi). Lower = more anomalous.
+        """
+      self.eval()
+      with torch.no_grad():
+         phi_norm = self.standardize_phi(phi)
+         log_prob = self.manifold_flow.log_prob(phi_norm)
+         return log_prob
 
     def redshift_logprob(self, phi, z):
         """Evaluate log p(z | phi) at hypothesis redshift(s) z.
