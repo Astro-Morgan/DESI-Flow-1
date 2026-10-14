@@ -34,8 +34,7 @@ preprocessed spectra, using on-the-fly hard-triplet mining.
 
 **2. Aristotle** (`aristotle/`) -- the student. A spectrum-only CNN +
 Transformer + MLP encoder distilled from Plato via MSE on the 32-dim embeddings.
-It loads Plato's trained projection head and freezes it, so student and
-teacher share one embedding space. No AION model is needed at inference.
+No AION model is needed at inference.
 
 **3. KaNoN** (`kanon/KaNoN.py`, trained in `kanon/KaNoN_train.ipynb`) --
 conditional normalizing flows (zuko neural spline flows) on the embeddings:
@@ -112,12 +111,13 @@ redshifts agree within class-dependent tolerances (GALAXY 0.33%, QSO 1%).
 2. **Aristotle**: place the Plato checkpoint as `plato.pth` anywhere under
    the working directory (it is auto-discovered), edit `Config` in
    `aristotle/Aristotle_train.py`, and run the same way. Then embed the
-   catalog with Aristotle.
-3. **KaNoN**: run `kanon/KaNoN_train.ipynb` top to bottom -- it precomputes
+   catalog with Aristotle. Initialized Aristotle with Aristotle(load_plato_head=True, freeze_projection_head=True)
+   if distilling and you want Teacher-Student in the token representation as well as the final representation.
+4. **KaNoN**: run `kanon/KaNoN_train.ipynb` top to bottom -- it precomputes
    the FAISS local-scale map, local redshift gradients, and cross-validated
    k-NN anchors, trains both flows with independent early stopping and LR
    annealing, and writes a full-catalog posterior HDF5.
-4. **kanonBOOST**: run `kanon/kanonBOOST_train.py` to train against the spectral embeddings and produce evaluation
+5. **kanonBOOST**: run `kanon/kanonBOOST_train.py` to train against the spectral embeddings and produce evaluation
    plots (`kanonboost_*.png`).
 
 ## Dependencies
