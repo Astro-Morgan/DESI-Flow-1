@@ -212,27 +212,31 @@ class Aristotle(nn.Module):
                  # --- Transformer encoder ---
                  n_layers: int = 4,
                  n_heads: int = 12,
-                 n_registers: int = 4):
+                 n_registers: int = 4,
+                # --- Projection head initialization options ---
+                 load_plato_head: bool = False,
+                 freeze_projection_head: bool = False,
+                 plato_checkpoint_path: str = None):
         super().__init__()
         print("Initializing 'Aristotle' Student Model...")
         self.n_dim = n_dim
         self.n_registers = int(n_registers)
 
         # --- Find and load the frozen Plato projection head ---
-        try:
-            plato_path = self._find_plato_checkpoint(self.PLATO_CHECKPOINT_NAME)
-            print(f"Found Plato checkpoint at: {plato_path}")
-            self.projection_head = self._load_frozen_plato_head(
-                checkpoint_path=plato_path,
-                n_dim_in=n_dim,
-                n_hidden=hidden_dim,
-                n_dim_out_primary=32,
-            )
-            print("Successfully loaded and froze Plato projection head.")
-        except Exception as e:
-            print("CRITICAL ERROR: Failed to initialize Aristotle.")
-            print(f"Details: {e}")
-            raise
+        if load_plato_head:
+            resolved_path = plato_checkpoint_path or self._find_plato_checkpoint(self.PLATO_CHECKPOINT_NAME)
+            if resolved_path is not None and os.path.exists(resolved_path):
+                print(f"Found Plato checkpoint at: {resolved_path}")
+                self._load_plato_head_weights(resolved_path)
+                print("Successfully loaded Plato projection head weights.")
+            else:
+                print(
+                    f"Notice: '{self.PLATO_CHECKPOINT_NAME}' not found. Initialized DeepProjectionHead "
+                    f"with fresh weights (will be overwritten if loading an Aristotle checkpoint)."
+                )
+
+        for param in self.projection_head.parameters():
+            param.requires_grad = not freeze_projection_head
 
         # --- Spectrum encoder ---
         self.cnn_encoder = ConvNetTeacher(
@@ -259,33 +263,20 @@ class Aristotle(nn.Module):
         self.final_norm = nn.LayerNorm(n_dim)
         print("Aristotle model body initialized successfully.")
 
-    def _find_plato_checkpoint(self, checkpoint_name: str) -> str:
-        """Search the working directory tree for the Plato checkpoint."""
+    def _find_plato_checkpoint(self, checkpoint_name: str):
+        """Search the working directory tree for the Plato checkpoint; returns None if absent."""
         for root, dirs, files in os.walk('.'):
             if checkpoint_name in files:
                 return os.path.join(root, checkpoint_name)
-        raise FileNotFoundError(
-            f"Could not find '{checkpoint_name}' in '{os.getcwd()}' or subdirectories."
-        )
+        return None
 
-    def _load_frozen_plato_head(self, checkpoint_path: str, **kwargs) -> DeepProjectionHead:
-        """Extract, load, and freeze the DeepProjectionHead from a Plato checkpoint.
-
-        Accepts either a full training checkpoint (dict with
-        'model_state_dict') or a bare state dict, and strips both plain and
-        DDP ('module.') prefixes from the projection-head keys.
-        """
-        try:
-            checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
-            if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-                plato_state_dict = checkpoint['model_state_dict']
-            else:
-                print("Warning: 'model_state_dict' key not found. "
-                      "Assuming file contains raw weights.")
-                plato_state_dict = checkpoint
-        except Exception as e:
-            print(f"Error: Could not load checkpoint from {checkpoint_path}")
-            raise e
+    def _load_plato_head_weights(self, checkpoint_path: str):
+        """Extract and load the DeepProjectionHead weights from a Plato checkpoint."""
+        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+            plato_state_dict = checkpoint['model_state_dict']
+        else:
+            plato_state_dict = checkpoint
 
         head_weights_clean = OrderedDict()
         ddp_prefix = 'module.projection_head.'
@@ -299,14 +290,10 @@ class Aristotle(nn.Module):
         if not head_weights_clean:
             raise ValueError(
                 f"Could not find any weights with prefix '{prefix}' or "
-                f"'{ddp_prefix}' in checkpoint. Check key names."
+                f"'{ddp_prefix}' in {checkpoint_path}."
             )
 
-        plato_head = DeepProjectionHead(**kwargs)
-        plato_head.load_state_dict(head_weights_clean)
-        for param in plato_head.parameters():
-            param.requires_grad = False
-        return plato_head
+        self.projection_head.load_state_dict(head_weights_clean)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """(B, 1, L_in) preprocessed spectrum -> (B, 32) embedding."""
@@ -341,30 +328,30 @@ def create_aristotle_optimizer(model: Aristotle, lr_muon: float = 1e-4,
                                lr_adam: float = 1e-4, wd: float = 0.00):
     """Build the MuonWithAuxAdam optimizer for Aristotle.
 
-    Muon updates >=2D "body" weights; AdamW handles 1D params plus the
-    special tokens ([CLS], registers, positional embedding). The frozen
-    projection head is excluded entirely.
+    Automatically includes `model.projection_head` if its parameters have
+    `requires_grad=True`, and excludes it if frozen.
     """
     if hasattr(model, 'module'):
-        model = model.module  # unwrap DDP
+        model = model.module
 
     body_modules = [
         model.cnn_encoder,
         model.context_norm,
         model.transformer_layers,
         model.final_norm,
-        # model.projection_head is FROZEN and excluded.
+        model.projection_head,
     ]
     non_body_params = [
-        model.registers,
-        model.cls_token,
-        model.pos_embed,
+        p for p in [model.registers, model.cls_token, model.pos_embed]
+        if p.requires_grad
     ]
 
-    hidden_weights = []       # Muon: 2D+ weights
-    hidden_gains_biases = []  # AdamW: 1D params
+    hidden_weights = []       # Muon: 2D+ trainable weights
+    hidden_gains_biases = []  # AdamW: 1D trainable params
     for module in body_modules:
         for p in module.parameters():
+            if not p.requires_grad:
+                continue
             (hidden_weights if p.ndim >= 2 else hidden_gains_biases).append(p)
 
     param_groups = [
