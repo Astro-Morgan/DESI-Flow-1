@@ -223,6 +223,8 @@ class Aristotle(nn.Module):
         self.n_registers = int(n_registers)
 
         # --- Find and load the frozen Plato projection head ---
+        head_kwargs = dict(n_dim_in=n_dim, n_hidden=hidden_dim, n_dim_out_primary=32)
+        self.projection_head = DeepProjectionHead(**head_kwargs)
         if load_plato_head:
             resolved_path = plato_checkpoint_path or self._find_plato_checkpoint(self.PLATO_CHECKPOINT_NAME)
             if resolved_path is not None and os.path.exists(resolved_path):
